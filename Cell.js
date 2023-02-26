@@ -1,21 +1,23 @@
 const cells = [];
 const adultSize = 40;
 const childSize = 20;
+
+// temp values
 const aggro = 0;
 const compan = 0;
 const intel = 0;
 const speed = 0;
 const color = 'red';
+
 const interactionRadius = 50;
 const repellentRadius = 50;
 const repelForce = 0.1;
 let selectedCell;
 const displayId = document.getElementById('display-id');
+const aggroStat = document.getElementById('aggro');
+const companStat = document.getElementById('compan');
 
-
-
-
-
+// creates a new cell
 function createCell(x, y, aggro, compan, intel, speed, size, targetX, targetY, color) {
     const cell = {
         x,
@@ -32,9 +34,7 @@ function createCell(x, y, aggro, compan, intel, speed, size, targetX, targetY, c
         lastTime: performance.now()
     };
 
-    
     cells.push(cell);
-    
 }
 
 // move cells
@@ -76,14 +76,12 @@ function moveCells() {
         }
         cell.lastTime = now;
         
-    
-
     }
 
     requestAnimationFrame(moveCells);
 }
 
-
+// repel cells
 function handleRepel(cell, otherCell) {
     const diffX = otherCell.x - cell.x;
     const diffY = otherCell.y - cell.y;
@@ -101,7 +99,7 @@ function handleRepel(cell, otherCell) {
     }
 }
 
-
+// handles cell interaction
 function handleInteraction(cell, otherCell) {
     const diffX = otherCell.x - cell.x;
     const diffY = otherCell.y - cell.y;
@@ -118,6 +116,7 @@ function handleInteraction(cell, otherCell) {
 
 }
 
+// returns the aggro level of a cell
 function getAggroLevel(cell) {
     switch(cell.aggro) {
         case 0:
@@ -183,6 +182,7 @@ document.addEventListener("click", function(event) {
         if ((mouseX  <= cell.x + interactionRadius && mouseX >= cell.x - interactionRadius) && 
             (mouseY <= cell.y + interactionRadius && mouseY >= cell.y - interactionRadius)) {
             selectedCell = cell;
+             
             console.log(selectedCell.id);
             displayId.innerText = selectedCell.id;
         }
@@ -191,7 +191,17 @@ document.addEventListener("click", function(event) {
 
 });
 
+// temporary function to create a new cell
+document.addEventListener("click", function(event) {
+    const randomY = Math.random() * window.innerHeight + 100;
+    const randomX = Math.random() * window.innerWidth + 100;
+    const randomInitX = Math.random() * window.innerWidth;
+    const randomInitY = Math.random() * window.innerHeight;
+    createCell(mouseX, mouseY, aggro, compan, intel, speed, adultSize, randomX, randomY, color);
+});
 
+
+// creates a new cell at mouse x and mouse y when 'a' is pressed
 document.addEventListener("keydown", function(event) {
     if (event.key === 'a') {
         const randomY = Math.random() * window.innerHeight + 100;
