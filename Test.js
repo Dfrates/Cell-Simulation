@@ -161,7 +161,7 @@ function getAggroLevel(cell) {
     }
 }
 
-function updateCell(cell) {
+function updateCell() {
     
     moveCells();
     
@@ -175,15 +175,14 @@ function drawCell(cell) {
 function draw() {
     background(0);
     for (const cell of cells) {
-        
-        updateCell(cell);
         drawCell(cell);
     }
+    moveCells();
 }
 
 function setup() {
     createCanvas(window.innerWidth + 100, window.innerHeight + 100);
-
+    
     
 }
 
