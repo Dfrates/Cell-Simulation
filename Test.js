@@ -11,109 +11,104 @@ const speed = 0;
 const color = 'red';
 
 const interactionRadius = 50;
-const repellentRadius = 50;
-const repelForce = 0.1;
+const repellentRadius = 40;
+const repelForce = 1;
 let selectedCell;
 const displayId = document.getElementById('display-id');
 const aggroStat = document.getElementById('aggro');
 const companStat = document.getElementById('compan');
 
 // creates a new cell
-function createCell(x, y, aggro, compan, intel, speed, size, targetX, targetY, color) {
-    const cell = {
-        x,
-        y,
-        aggro,
-        compan,
-        intel,
-        speed,
-        size,
-        color,
-        id: cells.length,
-        targetX,
-        targetY,
-        lastTime: performance.now()
-    };
 
-    cells.push(cell);
+
+class Cell {
+    constructor(x, y, aggro, compan, intel, speed, size, velocity, direction, color) {
+        this.x = x;
+        this.y = y;
+        this.aggro = aggro;
+        this.compan = compan;
+        this.intel = intel;
+        this.speed = speed;
+        this.size = size;
+        this.color = color;
+        this.id = cells.length;
+        this.velocity = { x: velocity.x, y: velocity.y };
+        this.direction = { x: direction.x, y: direction.y };
+        this.lastTime = performance.now();
+    }
+
+    move() {
+        const now = performance.now();
+        const elapsedTime = now - this.lastTime;
+        const angle = Math.atan2(this.direction.y, this.direction.x);
+        this.x += this.velocity.x * elapsedTime * Math.cos(angle);
+        this.y += this.velocity.y * elapsedTime * Math.sin(angle);
+        this.lastTime = now;
+    }
+
+
 }
+
+
 
 // move cells
 function moveCells() {
-    
-    //const now = performance.now();
-    // move each cell to a new position based on its speed and direction
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
-        /*
-        for (let j = i + 1; j < cells.length; j++) {
-            const otherCell = cells[j];
-            handleInteraction(cell, otherCell);
-        }
-        for (let j = i + 1; j < cells.length; j++) {
-            const otherCell = cells[j];
-            //handleRepel(cell, otherCell);
-        }
-        */
-        
-        moveCell(cell);
-
-        /*
+        cell.move();
+        //newDirection(cell);
+        handleEdges(cell);
         for (let j = i + 1; j < cells.length; j++) {
             const otherCell = cells[j];
             //handleInteraction(cell, otherCell);
-            //handleRepel(cell, otherCell);
+            handleCollison(cell, otherCell);
         }
-        */
-        
     }
+    
 
     requestAnimationFrame(moveCells);
 }
 
-function moveCell(cell){
-    const now = performance.now();
-    const elapsedTime = now - cell.lastTime;
-        
-    const currentX = cell.x;
-    const currentY = cell.y;
-
-    const diffX = cell.targetX - currentX;
-    const diffY = cell.targetY - currentY;
-
-    const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-    
-    cell.speed = .05/ distance;
-    
-
-    cell.x += diffX * cell.speed * elapsedTime;
-    cell.y += diffY * cell.speed * elapsedTime;
-
-    
-    if (distance < 1) {
-        cell.targetX = Math.random() * window.innerWidth + 100;
-        cell.targetY = Math.random() * window.innerHeight + 100;
-    }
-    cell.lastTime = now;
+// random number between -1 and 1
+function randomDirection() {
+    return Math.random() * 2 - 1;
 }
 
-// repel cells
-function handleRepel(cell, otherCell) {
-    const diffX = otherCell.x - cell.x;
-    const diffY = otherCell.y - cell.y;
+function newDirection(cell) {
+    const angle = Math.atan2(randomDirection(), randomDirection());
+    cell.direction.x = Math.cos(angle);
+    cell.direction.y = Math.sin(angle);
+}
 
-    const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-    if (distance < repellentRadius) {
-        const forceX = diffX  / distance * repelForce;
-        const forceY = diffY  / distance * repelForce;
 
-        cell.targetX += forceX;
-        cell.targetY += forceY;
 
-        otherCell.targetX -= forceX;
-        otherCell.targetY -= forceY;
+
+// hanndle the collision of the cells
+function handleCollison(cell, otherCell) {
+    const angle = Math.atan2(otherCell.y - cell.y, otherCell.x - cell.x);
+    const distance = Math.sqrt((otherCell.x - cell.x) * (otherCell.x - cell.x) + (otherCell.y - cell.y) * (otherCell.y - cell.y));
+    const distanceToMove = (cell.size + otherCell.size) / 2 - distance;
+    const radiSum = cell.size / 2 + otherCell.size / 2;
+
+    if ( distance <= radiSum) {
+        otherCell.x += distanceToMove * Math.cos(angle);
+        otherCell.y += distanceToMove * Math.sin(angle);
     }
 }
+
+// handle edges of the canvas
+function handleEdges(cell) {
+    if (cell.x > window.innerWidth + 100) {
+        cell.direction.x = -1;
+    } else if (cell.x < 0) {
+        cell.direction.x = 1;
+    } else if (cell.y > window.innerHeight + 100) {
+        cell.direction.y = -1;
+    } else if (cell.y < 0) {
+        cell.direction.y = 1;
+    }
+}
+
 
 // handles cell interaction
 function handleInteraction(cell, otherCell) {
@@ -122,11 +117,15 @@ function handleInteraction(cell, otherCell) {
 
     const distance = Math.sqrt(diffX * diffX + diffY * diffY);
     if (distance < interactionRadius) {
-        cell.targetX = Math.random() * window.innerWidth + 100;
-        cell.targetY = Math.random() * window.innerHeight + 100;
+        const forceX = diffX  / distance * repelForce;
+        const forceY = diffY  / distance * repelForce;
 
-        otherCell.targetX = Math.random() * window.innerWidth + 100;
-        otherCell.targetY = Math.random() * window.innerHeight + 100;
+        cell.direction.x += forceX;
+        cell.direction.y += forceY;
+        otherCell.direction.x -= forceX;
+        otherCell.direction.y -= forceY;
+
+        
     }
 
 
@@ -188,6 +187,12 @@ function setup() {
     
 }
 
+// random color hex
+function randomColor() {
+    return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+
 
 
 // shows the cell's stats when clicked
@@ -223,9 +228,12 @@ document.addEventListener("keydown", function(event) {
     if (event.key === 'a') {
         const randomY = Math.random() * window.innerHeight + 100;
         const randomX = Math.random() * window.innerWidth + 100;
+        const vel = { x: .1, y:  .1};
+        const direction = { x: randomDirection(), y: randomDirection()};
+        console.log(direction);
         const randomInitX = Math.random() * window.innerWidth;
         const randomInitY = Math.random() * window.innerHeight;
-        createCell(mouseX, mouseY, aggro, compan, intel, speed, adultSize, randomX, randomY, color);
+        cells.push(new Cell(mouseX, mouseY, aggro, compan, intel, speed, adultSize, vel, direction, randomColor()));
         
     }
 });
