@@ -9,8 +9,12 @@ const compan = 0;
 const intel = 0;
 const speed = 0;
 const color = 'red';
+const now = new Date();
+let chasing = true;
 
-const interactionRadius = 50;
+
+
+const interactionRadius = 100;
 const repellentRadius = 40;
 const repelForce = 1;
 let selectedCell;
@@ -50,7 +54,6 @@ class Cell {
 }
 
 
-
 // move cells
 function moveCells() {
     for (let i = 0; i < cells.length; i++) {
@@ -60,7 +63,7 @@ function moveCells() {
         handleEdges(cell);
         for (let j = i + 1; j < cells.length; j++) {
             const otherCell = cells[j];
-            //handleInteraction(cell, otherCell);
+            handleInteraction(cell, otherCell);
             handleCollison(cell, otherCell);
         }
     }
@@ -81,8 +84,6 @@ function newDirection(cell) {
 }
 
 
-
-
 // hanndle the collision of the cells
 function handleCollison(cell, otherCell) {
     const angle = Math.atan2(otherCell.y - cell.y, otherCell.x - cell.x);
@@ -93,7 +94,11 @@ function handleCollison(cell, otherCell) {
     if ( distance <= radiSum) {
         otherCell.x += distanceToMove * Math.cos(angle);
         otherCell.y += distanceToMove * Math.sin(angle);
+        return true;
     }
+    handleEdges(cell);
+    handleEdges(otherCell);
+    return false;
 }
 
 // handle edges of the canvas
@@ -110,6 +115,7 @@ function handleEdges(cell) {
 }
 
 
+// TODO: make the cells interact with each other
 // handles cell interaction
 function handleInteraction(cell, otherCell) {
     const diffX = otherCell.x - cell.x;
@@ -117,55 +123,83 @@ function handleInteraction(cell, otherCell) {
 
     const distance = Math.sqrt(diffX * diffX + diffY * diffY);
     if (distance < interactionRadius) {
-        const forceX = diffX  / distance * repelForce;
-        const forceY = diffY  / distance * repelForce;
 
-        cell.direction.x += forceX;
-        cell.direction.y += forceY;
-        otherCell.direction.x -= forceX;
-        otherCell.direction.y -= forceY;
+        if (cell.aggro > 7 && otherCell.aggro < cell.aggro) {
+            chasing = true;
+            // needs to be fixed so that it only chases for a certain amount of time
+            /*
+            chasing = true;
+            let seconds = 0;
+            const timer = setInterval(() =>{
+                seconds++;
+                
+                if (seconds <= 3) {
+                    aggroChase(cell, otherCell);
+                    
+                } else {
+                    chasing = false;
+                    clearInterval(timer);
+                }
 
+            }, 1000);
+            */
+            aggroChase(cell, otherCell);
+            
+
+
+
+        }
+        else {
+            chasing = false;
+            const forceX = diffX  / distance * repelForce;
+            const forceY = diffY  / distance * repelForce;
+
+            cell.direction.x += forceX;
+            cell.direction.y += forceY;
+            otherCell.direction.x -= forceX;
+            otherCell.direction.y -= forceY;
+        }
         
+
     }
+    handleEdges(cell);
+    handleEdges(otherCell);
 
 
 }
 
-// returns the aggro level of a cell
-function getAggroLevel(cell) {
-    switch(cell.aggro) {
-        case 0:
-        case 1:
-        case 2:
-            return 'A';
-            break;
-        case 3:
-        case 4:
-            return 'B';
-            break;
-        case 5:
-        case 6:
-            return 'C';
-            break;
-        case 7:
-        case 8:
-            return 'D';
-            break;
-        case 9:
-        case 10:
-            return 'E';
-            break;
-        default:
-            return 'error';
-            break;
+// chase other cell if aggro is high enough
+function aggroChase(cell, otherCell) {
+    
+    if (chasing) {
+        cell.velocity = { x: .2, y: .2 };
+        cell.direction = { x: otherCell.x - cell.x, y: otherCell.y - cell.y };
+        handleEdges(cell);
+        otherCell.velocity = { x: .2, y: .2 };
+        // other cell goes opposite direction of cell
+        otherCell.direction = { x: cell.x, y: cell.y};
+        handleEdges(otherCell);
+   
+        if (handleCollison(cell, otherCell)) {
+            cells.splice(otherCell.id, 1);
+            cell.velocity = { x: .1, y: .1 };
+            cell.direction = { x: randomDirection(), y: randomDirection() };
+        } else if (!chasing) {
+            cell.velocity = { x: .1, y: .1 };
+            cell.direction = { x: randomDirection(), y: randomDirection() };
+            otherCell.velocity = { x: .1, y: .1 };
+            otherCell.direction = { x: randomDirection(), y: randomDirection() };
+        } 
     }
-}
+    
 
-function updateCell() {
-    
-    moveCells();
-    
+    handleEdges(cell);
+    handleEdges(otherCell);
+
+   
+
 }
+    
 
 function drawCell(cell) {
     fill(cell.color);
@@ -183,7 +217,6 @@ function draw() {
 function setup() {
     createCanvas(window.innerWidth + 100, window.innerHeight + 100);
     
-    
 }
 
 // random color hex
@@ -191,16 +224,18 @@ function randomColor() {
     return '#' + Math.floor(Math.random() * 16777215).toString(16);
 }
 
+//create temporary agro cell
+const agroCell = new Cell(window.innerWidth/2, window.innerHeight/2, 10, 0, 0, 0, adultSize, { x: .1, y: .1 }, { x: randomDirection(), y: randomDirection() }, 'red');
+cells.push(agroCell);
 
-
-
+// TODO: fix where the mouse is clicked and the cells location
 // shows the cell's stats when clicked
 document.addEventListener("click", function(event) {
     const mouseX = event.clientX;
     const mouseY = event.clientY;
     for (cell of cells) {
-        if ((mouseX  <= cell.x + interactionRadius && mouseX >= cell.x - interactionRadius) && 
-            (mouseY <= cell.y + interactionRadius && mouseY >= cell.y - interactionRadius)) {
+        if ((mouseX  <= cell.x + cell.size && mouseX >= cell.x - cell.size) && 
+            (mouseY <= cell.y + cell.size && mouseY >= cell.y - cell.size)) {
             selectedCell = cell;
              
             console.log(selectedCell.id);

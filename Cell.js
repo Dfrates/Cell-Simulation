@@ -90,10 +90,6 @@ function moveCell(cell){
     cell.y += diffY * cell.speed * elapsedTime;
 
     
-    if (distance < 1) {
-        cell.targetX = Math.random() * window.innerWidth + 100;
-        cell.targetY = Math.random() * window.innerHeight + 100;
-    }
     cell.lastTime = now;
 }
 
@@ -132,34 +128,8 @@ function handleInteraction(cell, otherCell) {
 
 }
 
-// returns the aggro level of a cell
-function getAggroLevel(cell) {
-    switch(cell.aggro) {
-        case 0:
-        case 1:
-        case 2:
-            return 'A';
-            break;
-        case 3:
-        case 4:
-            return 'B';
-            break;
-        case 5:
-        case 6:
-            return 'C';
-            break;
-        case 7:
-        case 8:
-            return 'D';
-            break;
-        case 9:
-        case 10:
-            return 'E';
-            break;
-        default:
-            return 'error';
-            break;
-    }
+function aggroHunt(cell) {
+
 }
 
 function updateCell(cell) {
